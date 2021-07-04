@@ -1,6 +1,9 @@
 *.pth
 logs/*
 logs
+.logs
+.logs/*
+*.bin
 lightning_logs/*
 lightning_logs
 __pycache__/*
