@@ -1,6 +1,3 @@
-# # Data
-# - https://www.kaggle.com/benjaminwarner/resized-2015-2019-blindness-detection-images?select=resized+test+15
-
 # # Imports
 
 import argparse
@@ -20,6 +17,7 @@ from sklearn import metrics, model_selection, preprocessing
 from zeus.callbacks import EarlyStopping, TensorBoardLogger, GradientClipping, PlotLoss
 from zeus.metrics import LabelSmoothingCrossEntropy
 from zeus.datasets import ImageDataset
+from albumentations.pytorch import ToTensorV2
 from torch.nn import functional as F
 
 from zeus.utils.model_helpers import *
@@ -183,7 +181,7 @@ pl = PlotLoss(2)
 count_parameters(model, showtable=False)
 
 # +
-EPOCHS = 4
+EPOCHS = 2
 
 model.fit(
     train_dataset,

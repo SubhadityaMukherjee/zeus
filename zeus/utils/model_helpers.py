@@ -5,6 +5,7 @@ from typing import *
 import hiddenlayer as hl
 import numpy as np
 import torch
+import torchvision
 from prettytable import PrettyTable
 
 
@@ -98,3 +99,11 @@ def count_parameters(model, showtable=False):
         print(table)
     print(f"Total Trainable Params: {total_params}")
     return total_params
+
+
+def pil_from_tensor(x):
+    return torchvision.transforms.functional.to_pil_image(x)
+
+
+def pil_to_tensor(x):
+    return torchvision.transforms.functional.to_tensor(x)
