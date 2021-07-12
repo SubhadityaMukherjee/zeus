@@ -16,6 +16,17 @@ import torch.nn as nn
 from albumentations.pytorch import ToTensorV2
 from efficientnet_pytorch import EfficientNet
 from sklearn import metrics, model_selection, preprocessing
+
+<<<<<<< HEAD
+=======
+from albumentations.pytorch import ToTensorV2
+
+from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
+                            TensorBoardLogger)
+from zeus.datasets import ImageDataset
+from zeus.metrics import LabelSmoothingCrossEntropy
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 from torch.nn import functional as F
 
 import zeus

@@ -4,6 +4,8 @@ import argparse
 import os
 import sys
 
+<<<<<<< HEAD
+
 sys.path.append("../")
 os.environ["TORCH_HOME"] = "/media/hdd/Datasets/"
 
@@ -27,6 +29,31 @@ from zeus.datasets import ImageDataset
 from zeus.metrics import LabelSmoothingCrossEntropy
 from zeus.utils.model_helpers import *
 
+=======
+sys.path.append("../")
+os.environ['TORCH_HOME'] = "/media/hdd/Datasets/"
+
+import glob
+from pathlib import Path
+
+import albumentations
+import pandas as pd
+import torch
+import torch.nn as nn
+from efficientnet_pytorch import EfficientNet
+from PIL import Image
+from sklearn import metrics, model_selection, preprocessing
+from torch.nn import functional as F
+from torch.utils.data import Dataset
+
+import zeus
+from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
+                            TensorBoardLogger)
+from zeus.datasets import ImageDataset
+from zeus.metrics import LabelSmoothingCrossEntropy
+from zeus.utils.model_helpers import *
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 # # Defining
 
 # ## Params
@@ -38,6 +65,7 @@ TRAIN_BATCH_SIZE = 8
 VALID_BATCH_SIZE = 140
 # IMAGE_SIZE = 192
 
+<<<<<<< HEAD
 map_path = INPUT_PATH + "class_dict.csv"
 map_dict = pd.read_csv(map_path)
 map_dict.head(1)
@@ -47,6 +75,18 @@ map_dict["name"].nunique()
 # ## Label the data
 
 
+=======
+map_path = INPUT_PATH+"class_dict.csv"
+map_dict = pd.read_csv(map_path); map_dict.head(1)
+map_dict["name"].nunique()
+
+
+
+# ## Label the data
+
+
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class CamvidDataset(Dataset):
     def __init__(self, image_dir, mask_dir, transform=None):
         self.image_dir = image_dir
@@ -59,6 +99,7 @@ class CamvidDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = os.path.join(self.image_dir, self.images[index])
+<<<<<<< HEAD
         mask_path = os.path.join(
             self.mask_dir, self.images[index].replace(".png", "_L.png")
         )
@@ -66,13 +107,25 @@ class CamvidDataset(Dataset):
         mask = np.array(Image.open(mask_path).convert("RGB"))
         #         mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
         #         mask[mask == 255.0] = 1.0
+=======
+        mask_path = os.path.join(self.mask_dir, self.images[index].replace(".png", "_L.png"))
+        image = np.array(Image.open(img_path).convert("RGB"))
+        mask = np.array(Image.open(mask_path).convert("RGB"))
+#         mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
+#         mask[mask == 255.0] = 1.0
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
         if self.transform is not None:
             augmentations = self.transform(image=image, mask=mask)
             image = augmentations["image"]
             mask = augmentations["mask"]
+<<<<<<< HEAD
 
         return {"image": image, "targets": mask.clone().detach()}
+=======
+        
+        return {"image":image, "targets":mask.clone().detach()}
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
 
 # +
@@ -80,7 +133,10 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
@@ -96,6 +152,7 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
+<<<<<<< HEAD
 
 class UNET(nn.Module):
     def __init__(
@@ -103,6 +160,11 @@ class UNET(nn.Module):
         in_channels=3,
         out_channels=1,
         features=[64, 128, 256, 512],
+=======
+class UNET(nn.Module):
+    def __init__(
+            self, in_channels=3, out_channels=1, features=[64, 128, 256, 512],
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
     ):
         super(UNET, self).__init__()
         self.ups = nn.ModuleList()
@@ -118,6 +180,7 @@ class UNET(nn.Module):
         for feature in reversed(features):
             self.ups.append(
                 nn.ConvTranspose2d(
+<<<<<<< HEAD
                     feature * 2,
                     feature,
                     kernel_size=2,
@@ -127,6 +190,14 @@ class UNET(nn.Module):
             self.ups.append(DoubleConv(feature * 2, feature))
 
         self.bottleneck = DoubleConv(features[-1], features[-1] * 2)
+=======
+                    feature*2, feature, kernel_size=2, stride=2,
+                )
+            )
+            self.ups.append(DoubleConv(feature*2, feature))
+
+        self.bottleneck = DoubleConv(features[-1], features[-1]*2)
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
 
     def forward(self, x):
@@ -142,13 +213,21 @@ class UNET(nn.Module):
 
         for idx in range(0, len(self.ups), 2):
             x = self.ups[idx](x)
+<<<<<<< HEAD
             skip_connection = skip_connections[idx // 2]
+=======
+            skip_connection = skip_connections[idx//2]
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
             if x.shape != skip_connection.shape:
                 x = TF.resize(x, size=skip_connection.shape[2:])
 
             concat_skip = torch.cat((skip_connection, x), dim=1)
+<<<<<<< HEAD
             x = self.ups[idx + 1](concat_skip)
+=======
+            x = self.ups[idx+1](concat_skip)
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
         return self.final_conv(x)
 
@@ -156,6 +235,10 @@ class UNET(nn.Module):
 # +
 from os.path import isfile, join
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 from zeus.metrics import dice
 
 # class BCELoss2d(nn.Module):
@@ -174,19 +257,31 @@ from zeus.metrics import dice
 #         targets_flat = targets.view(-1)
 #         return self.bce_loss(probs_flat, targets_flat)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class Model(zeus.Model):
     def __init__(self, n_classes):
         super().__init__()
 
         self.model = UNET(3, n_classes).cuda()
 
+<<<<<<< HEAD
     #     def monitor_metrics(self, outputs, targets):
     # #         accuracy = dice(targets, outputs)
     # #         return {"dice_score": float(accuracy)}
     #         return {"dice_score": 0.0}
     def monitor_metrics(self, outloss):
         return {"epoch": self.current_epoch, "ce_loss": float(outloss)}
+=======
+#     def monitor_metrics(self, outputs, targets):
+# #         accuracy = dice(targets, outputs)
+# #         return {"dice_score": float(accuracy)}
+#         return {"dice_score": 0.0}
+    def monitor_metrics(self,outloss):
+        return {"epoch" : self.current_epoch, "ce_loss":float(outloss)}
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
     def fetch_optimizer(self):
         opt = torch.optim.AdamW(self.parameters(), lr=1e-4)
@@ -199,9 +294,15 @@ class Model(zeus.Model):
         if targets is not None:
             targets = targets.long()
             targets = torch.argmax(targets, dim=3).long()
+<<<<<<< HEAD
             #             print(outputs.shape, targets.shape)
             #             targets = targets.float().unsqueeze(1)
             #             loss = nn.BCEWithLogitsLoss()(outputs, targets)
+=======
+#             print(outputs.shape, targets.shape)
+#             targets = targets.float().unsqueeze(1)
+#             loss = nn.BCEWithLogitsLoss()(outputs, targets)
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
             loss = nn.CrossEntropyLoss()(outputs, targets)
             metrics = self.monitor_metrics(loss)
             return outputs, loss, metrics
@@ -211,9 +312,16 @@ class Model(zeus.Model):
 # +
 from albumentations.pytorch import ToTensorV2
 
+<<<<<<< HEAD
+
 train_aug = albumentations.Compose(
     [
         albumentations.Resize(160, 240),
+=======
+train_aug = albumentations.Compose(
+    [
+        albumentations.Resize(160,240),
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         albumentations.HorizontalFlip(p=0.5),
         albumentations.VerticalFlip(p=0.5),
         albumentations.Normalize(
@@ -229,7 +337,11 @@ train_aug = albumentations.Compose(
 
 valid_aug = albumentations.Compose(
     [
+<<<<<<< HEAD
         albumentations.Resize(160, 240),
+=======
+        albumentations.Resize(160,240),
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         albumentations.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225],
@@ -246,6 +358,7 @@ valid_aug = albumentations.Compose(
 
 # ## Training
 
+<<<<<<< HEAD
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -259,6 +372,21 @@ valid_ds = CamvidDataset(
     mask_dir="/media/hdd/Datasets/CamVid/val_labels/",
     transform=valid_aug,
 )
+=======
+from torch.utils.data import DataLoader
+from torchvision import transforms
+
+train_ds = CamvidDataset(
+        image_dir="/media/hdd/Datasets/CamVid/train/",
+        mask_dir="/media/hdd/Datasets/CamVid/train_labels/",
+        transform=train_aug,
+    )
+valid_ds = CamvidDataset(
+        image_dir="/media/hdd/Datasets/CamVid/val/",
+        mask_dir="/media/hdd/Datasets/CamVid/val_labels/",
+        transform=valid_aug,
+    )
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
 # ## Callbacks
 
@@ -294,6 +422,7 @@ model.fit(
 )
 # -
 
+<<<<<<< HEAD
 model.save(Path(MODEL_PATH) / "new_mod_nclass")
 
 # # Preds
@@ -310,12 +439,42 @@ pred2 = np.einsum("chw->hwc", pred)
 pred2.shape
 
 Image.fromarray(pred2[:, :, 3]).convert("RGB")
+=======
+model.save(Path(MODEL_PATH)/MODEL_NAME)
+
+# # Preds
+
+mod = model.load(Path(MODEL_PATH)/MODEL_NAME)
+
+tes =np.array(Image.open("/media/hdd/Datasets/CamVid/val/0001TP_009030.png"))
+tes = torch.tensor(tes).unsqueeze(0)
+tes = torch.einsum('bhwc->bchw',tes)
+tes.shape
+
+mo = model.model
+mo.eval()
+test_output = mo(tes.float().cuda())
+
+test_output = torch.einsum('bchw->hwc',test_output)
+test_output.shape
+
+tes_np = np.array(test_output.detach().cpu())
+
+tes_np.shape
+
+tes_np[:,:,1]
+
+im = pil_from_tensor(test_output[:,:,1])
+im = np.array(im.convert("RGB"))
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
 # # Testing imae encodings
 
 # +
 map_dict["name"] = map_dict["name"].astype("category")
 
+<<<<<<< HEAD
 map_dict["label"] = map_dict["name"].cat.codes
 map_dict["value"] = map_dict[["r", "g", "b"]].values.tolist()
 
@@ -356,3 +515,25 @@ def decode_segmap(image, nc=21):
 import matplotlib.pyplot as plt
 
 plt.imshow(decode_segmap(out_arr, 32)[:, :, :, 0])
+=======
+map_dict["label"]=map_dict["name"].cat.codes
+map_dict["value"] = map_dict[["r","g","b"]].values.tolist()
+
+ts = "/media/hdd/Datasets/CamVid/test_labels/0001TP_006690_L.png"
+# -
+
+test_im = np.array(Image.open(ts))
+
+# test_label = map_dict.head(100) 
+test_label = map_dict[["value","label"]]; test_label.head()
+
+mapping_f = {str(x["value"]).replace(",",''):x["label"] for x in test_label.to_dict(orient="records")}
+
+str(test_im[0,0,:])
+
+mapping_f[str(test_im[0,0,:]).replace("  ","")]
+
+mapping_f
+
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f

@@ -4,6 +4,8 @@ import argparse
 import os
 import sys
 
+<<<<<<< HEAD
+
 sys.path.append("../")
 os.environ["TORCH_HOME"] = "/media/hdd/Datasets/"
 
@@ -11,10 +13,25 @@ import glob
 
 import albumentations
 import pandas as pd
+
+=======
+sys.path.append("../")
+os.environ['TORCH_HOME'] = "/media/hdd/Datasets/"
+
+import glob
+
+import albumentations
+import pandas as pd
+
+import zeus
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 import torch
 import torch.nn as nn
 from efficientnet_pytorch import EfficientNet
 from sklearn import metrics, model_selection, preprocessing
+
+<<<<<<< HEAD
 from torch.nn import functional as F
 
 import zeus
@@ -22,6 +39,16 @@ from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
                             TensorBoardLogger)
 from zeus.datasets import ImageDataset
 from zeus.metrics import LabelSmoothingCrossEntropy
+
+=======
+from torch.nn import functional as F
+
+from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
+                            TensorBoardLogger)
+from zeus.datasets import ImageDataset
+from zeus.metrics import LabelSmoothingCrossEntropy
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 from zeus.utils.model_helpers import *
 
 # # Defining
@@ -39,7 +66,10 @@ VALID_BATCH_SIZE = 140
 from PIL import Image
 from torch.utils.data import Dataset
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class CarvanaDataset(Dataset):
     def __init__(self, image_dir, mask_dir, transform=None):
         self.image_dir = image_dir
@@ -52,9 +82,13 @@ class CarvanaDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = os.path.join(self.image_dir, self.images[index])
+<<<<<<< HEAD
         mask_path = os.path.join(
             self.mask_dir, self.images[index].replace(".jpg", "_mask.gif")
         )
+=======
+        mask_path = os.path.join(self.mask_dir, self.images[index].replace(".jpg", "_mask.gif"))
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         image = np.array(Image.open(img_path).convert("RGB"))
         mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
         mask[mask == 255.0] = 1.0
@@ -63,8 +97,13 @@ class CarvanaDataset(Dataset):
             augmentations = self.transform(image=image, mask=mask)
             image = augmentations["image"]
             mask = augmentations["mask"]
+<<<<<<< HEAD
 
         return {"image": image, "targets": mask.clone().detach()}
+=======
+        
+        return {"image":image, "targets":mask.clone().detach()}
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
 
 # +
@@ -72,7 +111,10 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
@@ -88,6 +130,7 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
+<<<<<<< HEAD
 
 class UNET(nn.Module):
     def __init__(
@@ -95,6 +138,11 @@ class UNET(nn.Module):
         in_channels=3,
         out_channels=1,
         features=[64, 128, 256, 512],
+=======
+class UNET(nn.Module):
+    def __init__(
+            self, in_channels=3, out_channels=1, features=[64, 128, 256, 512],
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
     ):
         super(UNET, self).__init__()
         self.ups = nn.ModuleList()
@@ -110,6 +158,7 @@ class UNET(nn.Module):
         for feature in reversed(features):
             self.ups.append(
                 nn.ConvTranspose2d(
+<<<<<<< HEAD
                     feature * 2,
                     feature,
                     kernel_size=2,
@@ -119,6 +168,14 @@ class UNET(nn.Module):
             self.ups.append(DoubleConv(feature * 2, feature))
 
         self.bottleneck = DoubleConv(features[-1], features[-1] * 2)
+=======
+                    feature*2, feature, kernel_size=2, stride=2,
+                )
+            )
+            self.ups.append(DoubleConv(feature*2, feature))
+
+        self.bottleneck = DoubleConv(features[-1], features[-1]*2)
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
 
     def forward(self, x):
@@ -134,13 +191,21 @@ class UNET(nn.Module):
 
         for idx in range(0, len(self.ups), 2):
             x = self.ups[idx](x)
+<<<<<<< HEAD
             skip_connection = skip_connections[idx // 2]
+=======
+            skip_connection = skip_connections[idx//2]
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
             if x.shape != skip_connection.shape:
                 x = TF.resize(x, size=skip_connection.shape[2:])
 
             concat_skip = torch.cat((skip_connection, x), dim=1)
+<<<<<<< HEAD
             x = self.ups[idx + 1](concat_skip)
+=======
+            x = self.ups[idx+1](concat_skip)
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
         return self.final_conv(x)
 
@@ -148,9 +213,14 @@ class UNET(nn.Module):
 # +
 from os.path import isfile, join
 
+<<<<<<< HEAD
+
 from zeus.metrics import dice
 
+=======
+from zeus.metrics import dice
 
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class BCELoss2d(nn.Module):
     """
     Code taken from:
@@ -167,7 +237,10 @@ class BCELoss2d(nn.Module):
         targets_flat = targets.view(-1)
         return self.bce_loss(probs_flat, targets_flat)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 class Model(zeus.Model):
     def __init__(self):
         super().__init__()
@@ -197,9 +270,16 @@ class Model(zeus.Model):
 # +
 from albumentations.pytorch import ToTensorV2
 
+<<<<<<< HEAD
+
 train_aug = albumentations.Compose(
     [
         albumentations.Resize(160, 240),
+=======
+train_aug = albumentations.Compose(
+    [
+        albumentations.Resize(160,240),
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         albumentations.HorizontalFlip(p=0.5),
         albumentations.VerticalFlip(p=0.5),
         albumentations.Normalize(
@@ -215,7 +295,11 @@ train_aug = albumentations.Compose(
 
 valid_aug = albumentations.Compose(
     [
+<<<<<<< HEAD
         albumentations.Resize(160, 240),
+=======
+        albumentations.Resize(160,240),
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
         albumentations.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225],
@@ -232,6 +316,7 @@ valid_aug = albumentations.Compose(
 
 # ## Training
 
+<<<<<<< HEAD
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -240,6 +325,16 @@ train_ds = CarvanaDataset(
     mask_dir="/media/hdd/Datasets/carvana/train_masks/",
     transform=train_aug,
 )
+=======
+from torch.utils.data import DataLoader
+from torchvision import transforms
+
+train_ds = CarvanaDataset(
+        image_dir="/media/hdd/Datasets/carvana/train/",
+        mask_dir="/media/hdd/Datasets/carvana/train_masks/",
+        transform=train_aug,
+    )
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
 
 # ## Callbacks
@@ -266,6 +361,7 @@ EPOCHS = 2
 
 model.fit(
     train_ds,
+<<<<<<< HEAD
     #     valid_dataset=valid_dataset,
     train_bs=TRAIN_BATCH_SIZE,
     #     valid_bs=VALID_BATCH_SIZE,
@@ -273,10 +369,20 @@ model.fit(
     epochs=EPOCHS,
     callbacks=[grc, pl, tb],
     #     callbacks=[es, tb],
+=======
+#     valid_dataset=valid_dataset,
+    train_bs=TRAIN_BATCH_SIZE,
+#     valid_bs=VALID_BATCH_SIZE,
+    device="cuda",
+    epochs=EPOCHS,
+    callbacks=[grc, pl, tb],
+#     callbacks=[es, tb],
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
     fp16=False,
 )
 # -
 
+<<<<<<< HEAD
 tes = (
     valid_aug(
         image=np.array(
@@ -286,11 +392,23 @@ tes = (
     .unsqueeze(0)
     .cuda()
 )
+=======
+tes = valid_aug(image = np.array(Image.open("/media/hdd/Datasets/carvana/train/0cdf5b5d0ce1_04.jpg")))["image"].unsqueeze(0).cuda()
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
 
 mo = model.model
 mo.eval()
 tes = torch.sigmoid(mo(tes))
+<<<<<<< HEAD
 tes = (tes > 0.5).float()
 tes = tes.squeeze(0)
 
 pil_from_tensor(tes)
+=======
+tes = (tes>.5).float()
+tes = tes.squeeze(0)
+
+pil_from_tensor(tes)
+
+
+>>>>>>> 736ff4709bca476f6dd5ebbf59d25d9a0f15f38f
