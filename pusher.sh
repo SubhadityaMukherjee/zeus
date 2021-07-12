@@ -4,7 +4,7 @@ isort .
 # mv docs/sprintdl/index.html docs/index.md
 # mv docs/sprintdl/* docs/
 # rm demos/*.py
-for i in $(exa demos); do jupytext --to script "demos/$i"; done;
+for i in $(exa demos/*.ipynb); do jupytext --to script "demos/$i"; done;
 if [[ ! -z $1 ]]; then
         git add . && git commit -m $1 && git push
 fi

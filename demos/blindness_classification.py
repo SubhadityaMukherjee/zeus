@@ -1,27 +1,28 @@
-# # Data
-# - https://www.kaggle.com/benjaminwarner/resized-2015-2019-blindness-detection-images?select=resized+test+15
-
 # # Imports
 
 import argparse
 import os
 import sys
+
 sys.path.append("../")
-os.environ['TORCH_HOME'] = "/media/hdd/Datasets/"
+os.environ["TORCH_HOME"] = "/media/hdd/Datasets/"
 
 import glob
+
 import albumentations
 import pandas as pd
-import zeus
 import torch
 import torch.nn as nn
+from albumentations.pytorch import ToTensorV2
 from efficientnet_pytorch import EfficientNet
 from sklearn import metrics, model_selection, preprocessing
-from zeus.callbacks import EarlyStopping, TensorBoardLogger, GradientClipping, PlotLoss
-from zeus.metrics import LabelSmoothingCrossEntropy
-from zeus.datasets import ImageDataset
 from torch.nn import functional as F
 
+import zeus
+from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
+                            TensorBoardLogger)
+from zeus.datasets import ImageDataset
+from zeus.metrics import LabelSmoothingCrossEntropy
 from zeus.utils.model_helpers import *
 
 # # Defining
@@ -72,7 +73,7 @@ class Model(zeus.Model):
 # +
 train_aug = albumentations.Compose(
     [
-        albumentations.Resize(IMAGE_SIZE,IMAGE_SIZE),
+        albumentations.Resize(IMAGE_SIZE, IMAGE_SIZE),
         albumentations.Transpose(p=0.5),
         albumentations.HorizontalFlip(p=0.5),
         albumentations.VerticalFlip(p=0.5),
@@ -95,7 +96,7 @@ train_aug = albumentations.Compose(
 
 valid_aug = albumentations.Compose(
     [
-        albumentations.Resize(IMAGE_SIZE,IMAGE_SIZE),
+        albumentations.Resize(IMAGE_SIZE, IMAGE_SIZE),
         albumentations.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225],
@@ -128,20 +129,28 @@ valid_aug = albumentations.Compose(
 
 # ## Data pre process
 
-df = pd.read_csv(INPUT_PATH+"trainLabels.csv");df.head(3)
+df = pd.read_csv(INPUT_PATH + "trainLabels.csv")
+df.head(3)
 
-df["image"] = INPUT_PATH+"trainImages/"+df["image"]+".jpg"; df.head(3)
+df["image"] = INPUT_PATH + "trainImages/" + df["image"] + ".jpg"
+df.head(3)
 
 # SUBSET REMOVE LATER
 df = df.head(5000)
 
 from sklearn.model_selection import train_test_split
 
-train_images ,valid_images =  train_test_split(df, test_size=.33)
+train_images, valid_images = train_test_split(df, test_size=0.33)
 
-train_image_paths, valid_image_paths = train_images["image"].values , valid_images["image"].values
+train_image_paths, valid_image_paths = (
+    train_images["image"].values,
+    valid_images["image"].values,
+)
 
-train_targets, valid_targets = train_images["level"].values , valid_images["level"].values
+train_targets, valid_targets = (
+    train_images["level"].values,
+    valid_images["level"].values,
+)
 
 # ## Training
 
@@ -183,7 +192,7 @@ pl = PlotLoss(2)
 count_parameters(model, showtable=False)
 
 # +
-EPOCHS = 4
+EPOCHS = 2
 
 model.fit(
     train_dataset,
@@ -193,11 +202,7 @@ model.fit(
     device="cuda",
     epochs=EPOCHS,
     callbacks=[grc, pl, tb],
-#     callbacks=[es, tb],
+    #     callbacks=[es, tb],
     fp16=True,
 )
 # -
-
-
-
-

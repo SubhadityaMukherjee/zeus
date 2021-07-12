@@ -19,3 +19,8 @@ __pycache__/*
 tags
 runs/
 demos/runs/*
+models/
+models/*
+.models
+.models/*
+models
