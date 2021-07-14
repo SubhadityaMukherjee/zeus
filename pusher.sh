@@ -1,4 +1,3 @@
-rm demos/*.py
 for i in $(exa demos/*.ipynb); do jupytext --to script "demos/$i"; done;
 black "."
 isort .
