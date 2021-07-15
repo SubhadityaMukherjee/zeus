@@ -1,6 +1,7 @@
-for i in $(exa demos/*.ipynb); do jupytext --to script "demos/$i"; done;
 black "."
 isort .
+jupytext --to notebook demos/*.py
+mv demos/*.ipynb demos/notebooks/
 # pdoc --force --html -o docs sprintdl
 # mv docs/sprintdl/index.html docs/index.md
 # mv docs/sprintdl/* docs/
