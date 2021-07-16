@@ -6,9 +6,12 @@
 - Semantic seg multi (x)
 
 # Other stuff
+- pruning
+- audio classification (x)
+- audio removal?
+
+# Architectures
 - Capsule net
-
-
 # NLP
 - multiclass classification
 - single classification
