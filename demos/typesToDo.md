@@ -1,9 +1,12 @@
 # CV
 - Multiclass classification (x)
 - Object detection
-- Keypoint regression
+- Keypoint regression (x)
 - Semantic seg binary (x)
 - Semantic seg multi (x)
+
+# Other stuff
+- Capsule net
 
 
 # NLP
@@ -11,3 +14,6 @@
 - single classification
 - pos tagging
 - ner
+
+# GAN
+- DCGAN

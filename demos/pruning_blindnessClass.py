@@ -21,7 +21,7 @@ from torch.nn import functional as F
 
 import zeus
 from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
-                            TensorBoardLogger)
+                            PruningCallback, TensorBoardLogger)
 from zeus.datasets import ImageDataset
 from zeus.metrics import LabelSmoothingCrossEntropy
 from zeus.utils.model_helpers import *
@@ -167,6 +167,7 @@ es = EarlyStopping(
 tb = TensorBoardLogger()
 grc = GradientClipping(5)
 pl = PlotLoss(2)
+pr = PruningCallback()
 
 count_parameters(model, showtable=False)
 #%%
@@ -179,7 +180,7 @@ model.fit(
     valid_bs=VALID_BATCH_SIZE,
     device="cuda",
     epochs=EPOCHS,
-    callbacks=[grc, pl, tb],
+    callbacks=[grc, pl, tb, pr],
     fp16=True,
 )
 # -
