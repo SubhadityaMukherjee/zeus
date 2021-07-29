@@ -5,7 +5,15 @@ from zeus.callbacks import Callback
 
 
 class EarlyStopping(Callback):
-    def __init__(self, monitor, model_path, patience=5, mode="min", delta=0.001):
+    def __init__(
+        self,
+        monitor,
+        model_path,
+        patience=5,
+        mode="min",
+        delta=0.001,
+        save_weights_only=False,
+    ):
         self.monitor = monitor
         self.patience = patience
         self.counter = 0
@@ -13,6 +21,7 @@ class EarlyStopping(Callback):
         self.best_score = None
         self.early_stop = False
         self.delta = delta
+        self.save_weights_only = save_weights_only
         self.model_path = model_path
         if self.mode == "min":
             self.val_score = np.Inf
@@ -60,4 +69,11 @@ class EarlyStopping(Callback):
                 )
             )
             model.save(self.model_path)
+            print(
+                "Validation score improved ({} --> {}). Saving model!".format(
+                    self.val_score, epoch_score
+                )
+            )
+            model.save(self.model_path, weights_only=self.save_weights_only)
+
         self.val_score = epoch_score

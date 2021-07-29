@@ -21,7 +21,7 @@ from torch.nn import functional as F
 
 import zeus
 from zeus.callbacks import (EarlyStopping, GradientClipping, PlotLoss,
-                            PruningCallback, TensorBoardLogger)
+                            PruningCallback, TensorBoardLogger, TrainingTime)
 from zeus.datasets import ImageDataset
 from zeus.metrics import LabelSmoothingCrossEntropy
 from zeus.utils.model_helpers import *
@@ -34,8 +34,8 @@ from zeus.utils.model_helpers import *
 INPUT_PATH = "/media/hdd/Datasets/blindness/"
 MODEL_PATH = "./models/"
 MODEL_NAME = os.path.basename("blindness.pt")
-TRAIN_BATCH_SIZE = 140
-VALID_BATCH_SIZE = 140
+TRAIN_BATCH_SIZE = 64  # lower batch sizes
+VALID_BATCH_SIZE = 64
 IMAGE_SIZE = 192
 
 #%%
@@ -166,12 +166,13 @@ es = EarlyStopping(
 
 tb = TensorBoardLogger()
 grc = GradientClipping(5)
-pl = PlotLoss(2)
 pr = PruningCallback()
+tt = TrainingTime()
 
 count_parameters(model, showtable=False)
 #%%
 EPOCHS = 2
+# pl = PlotLoss(EPOCHS)
 
 model.fit(
     train_dataset,
@@ -180,7 +181,7 @@ model.fit(
     valid_bs=VALID_BATCH_SIZE,
     device="cuda",
     epochs=EPOCHS,
-    callbacks=[grc, pl, tb, pr],
+    callbacks=[grc, tb, pr, tt],
     fp16=True,
     pin_mem=True,
 )

@@ -33,8 +33,11 @@ class Model(nn.Module):
         self._train_state = None
         self.device = None
         self._callback_runner = None
+        self.pin_mem = True
         self.fp16 = False
         self.scaler = None
+        self.accumulation_steps = 0
+        self.batch_index = 0
         self.metrics = {}
         self.metrics["train"] = {}
         self.metrics["valid"] = {}
@@ -80,6 +83,8 @@ class Model(nn.Module):
         fp16,
         train_collate_fn,
         valid_collate_fn,
+        accumulation_steps,
+        pin_mem,
     ):
 
         if callbacks is None:
@@ -89,28 +94,32 @@ class Model(nn.Module):
             n_jobs = psutil.cpu_count()
 
         self.device = device
+        self.accumulation_steps = accumulation_steps
 
         if next(self.parameters()).device != self.device:
             self.to(self.device)
 
         if self.train_loader is None:
-            self.train_loader = torch.utils.data.DataLoader(
+            self.train_loader = self.ret_dl(
                 train_dataset,
-                batch_size=train_bs,
-                num_workers=n_jobs,
-                sampler=train_sampler,
-                shuffle=True,
-                collate_fn=train_collate_fn,
+                train_bs,
+                n_jobs,
+                train_sampler,
+                True,
+                train_collate_fn,
+                pin_mem=pin_mem,
             )
+
         if self.valid_loader is None:
             if valid_dataset is not None:
-                self.valid_loader = torch.utils.data.DataLoader(
+                self.valid_loader = self.ret_dl(
                     valid_dataset,
-                    batch_size=valid_bs,
-                    num_workers=n_jobs,
-                    sampler=valid_sampler,
-                    shuffle=False,
-                    collate_fn=valid_collate_fn,
+                    valid_bs,
+                    n_jobs,
+                    valid_sampler,
+                    False,
+                    valid_collate_fn,
+                    pin_mem=pin_mem,
                 )
 
         if self.optimizer is None:
@@ -125,6 +134,17 @@ class Model(nn.Module):
 
         self._callback_runner = CallbackRunner(callbacks, self)
         self.train_state = enums.TrainingState.TRAIN_START
+
+    def ret_dl(self, dataset, bs, n_jobs, sampler, shuffle, collate, pin_mem):
+        return torch.utils.data.DataLoader(
+            dataset,
+            batch_size=bs,
+            num_workers=n_jobs,
+            sampler=sampler,
+            shuffle=shuffle,
+            collate_fn=collate,
+            pin_memory=pin_mem,
+        )
 
     def monitor_metrics(self, *args, **kwargs):
         return
@@ -152,26 +172,32 @@ class Model(nn.Module):
         return output, loss, metrics
 
     def train_one_step(self, data):
-        self.optimizer.zero_grad()
+        if self.accumulation_steps == 1 and self.batch_index == 0:
+            self.optimizer.zero_grad()
         _, loss, metrics = self.model_fn(data)
+        if (self.batch_index + 1) % self.accumulation_steps == 0:
+            self.train_state = enums.TrainingState.OPTIMIZER_START
+            with torch.set_grad_enabled(True):
+                if self.fp16:
+                    with torch.cuda.amp.autocast():
+                        self.scaler.scale(loss).backward()
+                        self.scaler.step(self.optimizer)
+                        self.scaler.update()
+                else:
+                    loss.backward()
+                    self.optimizer.step()
+                if self.scheduler:
+                    if self.step_scheduler_after == "batch":
+                        if self.step_scheduler_metric is None:
+                            self.scheduler.step()
+                        else:
+                            step_metric = self.name_to_metric(
+                                self.step_scheduler_metric
+                            )
+                            self.scheduler.step(step_metric)
 
-        self.train_state = enums.TrainingState.OPTIMIZER_START
-        with torch.set_grad_enabled(True):
-            if self.fp16:
-                with torch.cuda.amp.autocast():
-                    self.scaler.scale(loss).backward()
-                    self.scaler.step(self.optimizer)
-                    self.scaler.update()
-            else:
-                loss.backward()
-                self.optimizer.step()
-            if self.scheduler:
-                if self.step_scheduler_after == "batch":
-                    if self.step_scheduler_metric is None:
-                        self.scheduler.step()
-                    else:
-                        step_metric = self.name_to_metric(self.step_scheduler_metric)
-                        self.scheduler.step(step_metric)
+                if self.batch_index > 0:
+                    self.optimizer.zero_grad()
         self.train_state = enums.TrainingState.OPTIMIZER_END
         return loss, metrics
 
@@ -191,8 +217,11 @@ class Model(nn.Module):
         self.train()
         self.model_state = enums.ModelState.TRAIN
         losses = AverageMeter()
+        if self.accumulation_steps > 1:
+            self.optimizer.zero_grad()
         tk0 = tqdm(data_loader, total=len(data_loader))
         for b_idx, data in enumerate(tk0):
+            self.batch_index = b_idx
             self.train_state = enums.TrainingState.TRAIN_STEP_START
             loss, metrics = self.train_one_step(data)
             self.train_state = enums.TrainingState.TRAIN_STEP_END
@@ -269,8 +298,11 @@ class Model(nn.Module):
             tk0.set_postfix(stage="test")
         tk0.close()
 
-    def save(self, model_path):
+    def save(self, model_path, weights_only=False):
         model_state_dict = self.state_dict()
+        if weights_only:
+            torch.save(model_state_dict, model_path)
+            return
         if self.optimizer is not None:
             opt_state_dict = self.optimizer.state_dict()
         else:
@@ -287,12 +319,15 @@ class Model(nn.Module):
         model_dict["fp16"] = self.fp16
         torch.save(model_dict, model_path)
 
-    def load(self, model_path, device="cuda"):
+    def load(self, model_path, weights_only=False, device="cuda"):
         self.device = device
         if next(self.parameters()).device != self.device:
             self.to(self.device)
         model_dict = torch.load(model_path, map_location=torch.device(device))
-        self.load_state_dict(model_dict["state_dict"])
+        if weights_only:
+            self.load_state_dict(model_dict)
+        else:
+            self.load_state_dict(model_dict["state_dict"])
 
     def fit(
         self,
@@ -309,6 +344,8 @@ class Model(nn.Module):
         fp16=False,
         train_collate_fn=None,
         valid_collate_fn=None,
+        accumulation_steps=1,
+        pin_mem=None,
     ):
         self._init_model(
             device=device,
@@ -323,6 +360,8 @@ class Model(nn.Module):
             fp16=fp16,
             train_collate_fn=train_collate_fn,
             valid_collate_fn=valid_collate_fn,
+            accumulation_steps=accumulation_steps,
+            pin_mem=pin_mem,
         )
 
         self.train_loss_history = []

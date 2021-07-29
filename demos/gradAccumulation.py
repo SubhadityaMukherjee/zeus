@@ -34,8 +34,8 @@ from zeus.utils.model_helpers import *
 INPUT_PATH = "/media/hdd/Datasets/blindness/"
 MODEL_PATH = "./models/"
 MODEL_NAME = os.path.basename("blindness.pt")
-TRAIN_BATCH_SIZE = 140
-VALID_BATCH_SIZE = 140
+TRAIN_BATCH_SIZE = 64  # lower batch sizes
+VALID_BATCH_SIZE = 64
 IMAGE_SIZE = 192
 
 #%%
@@ -166,12 +166,12 @@ es = EarlyStopping(
 
 tb = TensorBoardLogger()
 grc = GradientClipping(5)
-pl = PlotLoss(2)
 pr = PruningCallback()
 
 count_parameters(model, showtable=False)
 #%%
 EPOCHS = 2
+pl = PlotLoss(EPOCHS)
 
 model.fit(
     train_dataset,
@@ -183,5 +183,6 @@ model.fit(
     callbacks=[grc, pl, tb, pr],
     fp16=True,
     pin_mem=True,
+    accumulation_steps=3,  # just add this
 )
 # -
